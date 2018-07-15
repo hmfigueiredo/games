@@ -19,7 +19,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector3;
 import com.transcendence.entities.blocks.Block;
 import com.transcendence.entities.characters.GameCharacter;
-import com.transcendence.entities.items.ItemStack;
+import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.places.Blueprint;
 import com.transcendence.entities.places.ManhattanDistanceHeuristic;
 import com.transcendence.entities.places.Tile;
@@ -150,6 +150,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 			Vector3 clickPosition = new Vector3();
 			camera.unproject(clickPosition.set(Gdx.input.getX(), Gdx.input.getY(), 0));
 			Sprite s = TextureManager.createSprite("building", Tile.TILE_SIZE, Tile.TILE_SIZE);
+			// Sprite s = TextureManager.createSprite("bed_double", Tile.TILE_SIZE, Tile.TILE_SIZE*2);
 			
 			// batch.draw(s, clickPosition.x, clickPosition.y, Tile.TILE_SIZE, Tile.TILE_SIZE);
 			Blueprint.turnToBlueprint(s);
@@ -428,7 +429,8 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		
 		if (isBuildingMode)
 		{			
-			Block b = Block.createBlock(Block.BLOCK_TYPES.BUILDING, targetTile.getX(), targetTile.getY());
+			//Block b = Block.createBlock(Block.BLOCK_TYPES.BUILDING, targetTile.getX(), targetTile.getY());
+			Block b = Block.createBlock(Block.BLOCK_TYPES.ROCK, targetTile.getX(), targetTile.getY());
 			Blueprint bp = new Blueprint(b, targetTile.getX()*Tile.TILE_SIZE, targetTile.getY()*Tile.TILE_SIZE);		
 			Build build = new Build(bp, targetTile.getX(), targetTile.getY());
 			if (targetTile.getBlock() == null && !orders.contains(build))
@@ -478,10 +480,12 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 						
 						if (theOrder.isCompleted())
 						{	
-							ItemStack items = world.getTile(theOrder.getX(), theOrder.getY()).destroyBlock();
+							Recipe items = world.getTile(theOrder.getX(), theOrder.getY()).destroyBlock();
 							if (items != null)
-								items.setPosition(theOrder.getX(), theOrder.getY());
-							
+							{
+								world.dumpItems(items, theOrder.getX(), theOrder.getY());
+							}
+								
 							// TODO: only recompute neighbors of this block
 							world.recomputeNeighbors();
 							completedOrders.add(theOrder);

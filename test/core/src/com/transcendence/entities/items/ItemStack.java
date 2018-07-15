@@ -34,4 +34,9 @@ public class ItemStack {
 	{
 		return itemQt;
 	}
+	
+	public Item getItem()
+	{
+		return item;
+	}
 }

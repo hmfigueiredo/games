@@ -3,6 +3,7 @@ package com.transcendence.entities.blocks;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.items.Item;
 import com.transcendence.entities.items.ItemStack;
 import com.transcendence.entities.places.Blueprint;
@@ -17,8 +18,7 @@ public class Block extends Workable implements Scavengeable {
 	// TODO: LOAD this from file (example https://stackoverflow.com/questions/4908973/java-property-file-as-enum)
 	public static enum BLOCK_TYPES { 
 		TREE("tree", Item.WOOD, ItemStack.MAX_ITEM_STACK), 
-		ROCK("rock", Item.STONE, ItemStack.MAX_ITEM_STACK),
-		BUILDING("building", Item.STONE, ItemStack.MAX_ITEM_STACK);
+		ROCK("rock", Item.STONE, ItemStack.MAX_ITEM_STACK);
 		
 		private final String sprite;
 		private final int item;
@@ -49,14 +49,13 @@ public class Block extends Workable implements Scavengeable {
 	
 	protected Sprite blockSprite;
 	// protected int hitPoints;
-	protected ItemStack itemsProvided;	
+	protected Recipe itemsProvided;	
 	
-	private Block(Sprite sprite, Item providedItem, int itemQt) 
+	protected Block(Sprite sprite, Item providedItem, int itemQt) 
 	{
-		blockSprite = sprite;
-		
-		// TODO: randomize provided items
-		itemsProvided = new ItemStack(providedItem, itemQt);
+		blockSprite = sprite;		
+		itemsProvided = new Recipe();
+		itemsProvided.addItem(providedItem, itemQt);
 	}
 
 	public void render(SpriteBatch batch, boolean renderAsBlueprint)
@@ -79,7 +78,7 @@ public class Block extends Workable implements Scavengeable {
 	}
 
 	@Override
-	public ItemStack scavenge() {
+	public Recipe scavenge() {
 		return itemsProvided;
 	}
 

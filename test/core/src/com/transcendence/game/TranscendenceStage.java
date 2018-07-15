@@ -26,7 +26,7 @@ public class TranscendenceStage extends Stage {
 	ContextMenu contextMenu;
 	
 	
-	public TranscendenceStage(TranscendenceGame tgame)
+	public TranscendenceStage(final TranscendenceGame tgame)
 	{
 		super();
 		
@@ -58,7 +58,7 @@ public class TranscendenceStage extends Stage {
  		table.add(currentText).left().pad(10);
  		table.add(currentFps).right().pad(10);
  		table.row();
-/* 		
+	
  		// Create a button with the "default" TextButtonStyle. A 3rd parameter can be used to specify a name other than "default".
  		buildButton = new TextButton("Build", skin);
  		buildButton.setWidth(BUTTON_WIDTH);
@@ -86,7 +86,6 @@ public class TranscendenceStage extends Stage {
 			}
 		});
 		
-		*/
 	}
 	
 	public void setText(String text)

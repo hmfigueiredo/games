@@ -28,8 +28,8 @@ public class TranscendenceUI extends Actor {
 		gameActionsClosed.setPosition(0, Gdx.graphics.getHeight()/2 - gameActionsClosed.getHeight()/2);
 		gameStatus.setPosition(Gdx.graphics.getWidth()/2 - gameStatus.getWidth()/2, Gdx.graphics.getHeight()-gameStatus.getHeight());
 		
-		// for now, actions are always opened
-		actionsOpened = true;
+		// for now, actions are always closed
+		actionsOpened = false;
 		
 		this.setBounds(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 	}

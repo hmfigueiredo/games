@@ -1,5 +1,7 @@
 package com.transcendence.game;
 
+import java.util.Iterator;
+
 import com.badlogic.gdx.ai.pfa.Connection;
 import com.badlogic.gdx.ai.pfa.indexed.IndexedGraph;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -7,6 +9,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.transcendence.entities.blocks.Block;
+import com.transcendence.entities.craftables.Recipe;
+import com.transcendence.entities.items.ItemStack;
 import com.transcendence.entities.places.Tile;
 
 public class GameWorld implements IndexedGraph<Tile> {
@@ -19,6 +23,8 @@ public class GameWorld implements IndexedGraph<Tile> {
 	
 	public static int MAX_HORIZONTAL_SIZE = 200;
 	public static int MAX_VERTICAL_SIZE = 200;
+	
+	public static int MAX_FIND_RADIUS = 50;
 
 	private Tile[][] world;
 	
@@ -183,6 +189,60 @@ public class GameWorld implements IndexedGraph<Tile> {
 				world[w][h].setSelected(false);
 			}
 		}
+	}
+
+	
+	/**
+	 * Dump items around position (x, y)
+	 * @param items
+	 * @param x
+	 * @param y
+	 */
+	public void dumpItems(Recipe items, int x, int y) {
+		Iterator<ItemStack> iter  = items.getItems().iterator();
+		
+		while (iter.hasNext())
+		{
+			ItemStack theItem = iter.next();
+			
+			Tile tileForStack = findFreePlace(x, y);
+			if (tileForStack != null)
+			{
+				tileForStack.addItems(theItem);
+			}
+		}
+		
+	}
+	
+	/**
+	 * Finds a free spot (no block or itemstack) in an increasing radius around (x, y)
+	 * @param x
+	 * @param y
+	 * @return
+	 */
+	private Tile findFreePlace(int x, int y)
+	{		
+		int radius = 0;
+		while (radius < MAX_FIND_RADIUS)
+		{
+			for (int i=x-radius; i<=x+radius; i++)
+			{
+				for (int j=y-radius; j<=y+radius; j++)
+				{
+					if (i>=0 && j>=0 && world[i][j] != null)
+					{
+						if (world[i][j].getBlock() == null && world[i][j].getItems() == null)
+						{
+							return world[i][j];
+						}
+					}
+				}
+			}
+				
+			radius++;
+		}
+		
+		return null;
 	}
 
 }

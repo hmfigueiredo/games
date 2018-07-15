@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Array;
 import com.transcendence.entities.blocks.Block;
+import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.items.ItemStack;
 
 public class Tile {
@@ -86,6 +87,15 @@ public class Tile {
 	public ItemStack getItems() {
 		return items;
 	}
+	
+	public void addItems(ItemStack itemsToAdd)
+	{
+		if (items == null)
+		{
+			items = itemsToAdd;
+			items.setPosition(x, y);
+		}
+	}
 
 	public Block getBlock() {
 		return block;
@@ -125,14 +135,16 @@ public class Tile {
 	}
 
 
-	public ItemStack destroyBlock() {
+	public Recipe destroyBlock() {
+		Recipe resultingItems = new Recipe();
+		
 		if (block != null)
 		{
-			items = block.scavenge();
+			resultingItems = block.scavenge();
 			block = null;
 			this.isTraversable = true;
 		}
 		
-		return items;
+		return resultingItems;
 	}
 }

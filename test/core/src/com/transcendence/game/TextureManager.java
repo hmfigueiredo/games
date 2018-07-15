@@ -25,6 +25,7 @@ public class TextureManager {
 		Texture gameActions = new Texture("ui/game_actions.png");
 		Texture gameActionsClosed = new Texture("ui/game_actions_closed.png");
 		Texture statusBar = new Texture("ui/status_bar.png");
+		Texture bedDouble = new Texture("blocks/bed_double.png");
 		
 
 		atlas = new TextureAtlas();
@@ -37,6 +38,7 @@ public class TextureManager {
 		atlas.addRegion("cross", crossTexture, 0, 0, 32, 32);
 		atlas.addRegion("stone_stack", stoneStack, 0, 0, 32, 32);
 		atlas.addRegion("wood_stack", woodStack, 0, 0, 32, 32);
+		atlas.addRegion("bed_double", bedDouble, 0, 0, 630, 919);
 		
 		atlas.addRegion("game_actions", gameActions, 0, 0, 300, 812);
 		atlas.addRegion("game_actions_closed", gameActionsClosed, 0, 0, 39, 806);
