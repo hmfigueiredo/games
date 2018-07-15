@@ -1,5 +1,7 @@
 package com.transcendence.game;
 
+import java.util.Iterator;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -12,6 +14,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.transcendence.entities.craftables.Craftable;
+import com.transcendence.entities.craftables.CraftableLoader;
 
 public class TranscendenceStage extends Stage {
 
@@ -24,6 +28,7 @@ public class TranscendenceStage extends Stage {
 	
 	private TranscendenceGame game;
 	ContextMenu contextMenu;
+	GameMenu craftablesMenu;
 	
 	
 	public TranscendenceStage(final TranscendenceGame tgame)
@@ -63,7 +68,19 @@ public class TranscendenceStage extends Stage {
  		buildButton = new TextButton("Build", skin);
  		buildButton.setWidth(BUTTON_WIDTH);
  		table.add(buildButton).expand().bottom().left().pad(10).width(BUTTON_WIDTH);
- 		 		
+ 		 
+ 		
+ 		craftablesMenu = new GameMenu("Build", skin);
+ 		craftablesMenu.setVisible(false);
+ 		this.addActor(craftablesMenu);
+ 		
+ 		Iterator<Craftable> iter = CraftableLoader.getCraftables().iterator();
+ 		while (iter.hasNext())
+ 		{
+ 			Craftable craft = iter.next();
+ 			craftablesMenu.addBuildItem(game, craft);
+ 		}		
+ 		
  		// Add a listener to the button. ChangeListener is fired when the button's checked state changes, eg when clicked,
 		// Button#setChecked() is called, via a key press, etc. If the event.cancel() is called, the checked state will be reverted.
 		// ClickListener could have been used, but would only fire when clicked. Also, canceling a ClickListener event won't
@@ -72,15 +89,13 @@ public class TranscendenceStage extends Stage {
 			public void changed (ChangeEvent event, Actor actor) {
 				if (buildButton.isChecked())
 				{
-					buildButton.setText("Building...");
-					// System.out.println("Color was ("+buildButton.getColor().r+","+buildButton.getColor().g+","+buildButton.getColor().b+","+buildButton.getColor().a+")");
 					buildButton.setColor(checkedColor);
-					tgame.setBuildingMode(true);
+					// tgame.setBuildingMode(true);
+					craftablesMenu.setVisible(true);
 				}
 				else
 				{
 					buildButton.setColor(defaultColor);
-					buildButton.setText("Build");
 					game.setBuildingMode(false);
 				}
 			}
@@ -116,9 +131,11 @@ public class TranscendenceStage extends Stage {
 		return contextMenu;
 	}
 	
-	public void hideContextMenu()
+	public void hideMenus()
 	{
 		this.getActors().removeValue(contextMenu, true);
 		contextMenu = null;
+		
+		craftablesMenu.setVisible(false);
 	}
 }

@@ -59,8 +59,10 @@ public class Blueprint {
 		return block;
 	}
 
-	public static void turnToBlueprint(Sprite s) {
+	public static Sprite turnToBlueprint(Sprite s) {
 		s.setColor(Color.BLUE);		
 		s.setAlpha(0.3f);
+		
+		return s;
 	}
 }

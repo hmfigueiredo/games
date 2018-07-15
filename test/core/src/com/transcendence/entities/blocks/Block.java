@@ -3,6 +3,7 @@ package com.transcendence.entities.blocks;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.transcendence.entities.craftables.Craftable;
 import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.items.Item;
 import com.transcendence.entities.items.ItemStack;
@@ -51,11 +52,10 @@ public class Block extends Workable implements Scavengeable {
 	// protected int hitPoints;
 	protected Recipe itemsProvided;	
 	
-	protected Block(Sprite sprite, Item providedItem, int itemQt) 
+	protected Block(Sprite sprite, Recipe providedItem) 
 	{
 		blockSprite = sprite;		
-		itemsProvided = new Recipe();
-		itemsProvided.addItem(providedItem, itemQt);
+		itemsProvided = providedItem;
 	}
 
 	public void render(SpriteBatch batch, boolean renderAsBlueprint)
@@ -92,9 +92,18 @@ public class Block extends Workable implements Scavengeable {
 		Sprite s = TextureManager.createSprite(theBlock.getSprite(), Tile.TILE_SIZE, Tile.TILE_SIZE);
 		s.setPosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
 		// TODO: for now, all blocks return only one item type
-		Item i = Item.getNewItem(theBlock.getItem());
+		Recipe r = new Recipe();
+		r.addItem(Item.getNewItem(theBlock.getItem()), ItemStack.MAX_ITEM_STACK);
+		
+		return new Block(s, r);
+	}
+	
+	public static Block createBlock(Craftable craft, int x, int y)
+	{
+		Sprite s = new Sprite(craft.getSprite());
+		s.setPosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
 
-		return new Block(s, i, theBlock.qt);
+		return new Block(s, craft.getRecipe());
 	}
 
 }

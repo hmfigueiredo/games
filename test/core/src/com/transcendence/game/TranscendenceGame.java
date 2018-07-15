@@ -19,6 +19,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector3;
 import com.transcendence.entities.blocks.Block;
 import com.transcendence.entities.characters.GameCharacter;
+import com.transcendence.entities.craftables.Craftable;
 import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.places.Blueprint;
 import com.transcendence.entities.places.ManhattanDistanceHeuristic;
@@ -35,7 +36,6 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	private String currentText;
 	
 	private TranscendenceStage stage;
-	private TranscendenceUI ui;
 	
 	private ManhattanDistanceHeuristic mHeuristic;
 	private IndexedAStarPathFinder<Tile> mPathFinder;
@@ -46,6 +46,8 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	private boolean isBuildingMode;
 	private boolean dragging;
 	
+	private Craftable craftItem;
+	
 	@Override
 	public void create () {
 //	    rotationSpeed = 0.5f;
@@ -55,7 +57,6 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		
 	    batch = new SpriteBatch();
 	    stage = new TranscendenceStage(this);
-	    ui = new TranscendenceUI();
 
 		world = new GameWorld();
 		world.addObstacles(10, Block.BLOCK_TYPES.TREE);
@@ -145,14 +146,15 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		
 		// render selections
 		// If building mode, show item blueprint under mouse cursor
-		if (isBuildingMode)
+		if (isBuildingMode && craftItem != null)
 		{
 			Vector3 clickPosition = new Vector3();
 			camera.unproject(clickPosition.set(Gdx.input.getX(), Gdx.input.getY(), 0));
-			Sprite s = TextureManager.createSprite("building", Tile.TILE_SIZE, Tile.TILE_SIZE);
+			// Sprite s = TextureManager.createSprite("building", Tile.TILE_SIZE, Tile.TILE_SIZE);
 			// Sprite s = TextureManager.createSprite("bed_double", Tile.TILE_SIZE, Tile.TILE_SIZE*2);
 			
 			// batch.draw(s, clickPosition.x, clickPosition.y, Tile.TILE_SIZE, Tile.TILE_SIZE);
+			Sprite s = new Sprite(craftItem.getSprite());
 			Blueprint.turnToBlueprint(s);
 			
 			s.setPosition(clickPosition.x - (clickPosition.x%Tile.TILE_SIZE), clickPosition.y - (clickPosition.y%Tile.TILE_SIZE));
@@ -231,7 +233,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		}
 		else
 		{
-			addBlueprint(x, y);
+			addBlueprint(craftItem, x, y);
 		}
 	}
 	
@@ -239,7 +241,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	private void checkMouseRightClick(float x, float y)
 	{
 		boolean charactersSelected = false;
-		stage.hideContextMenu();
+		stage.hideMenus();
 		
 		Iterator<GameCharacter> iter = characters.iterator();
 		while (iter.hasNext())
@@ -381,7 +383,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		
 		if (isBuildingMode)
 		{
-			addBlueprint(clickPosition.x, clickPosition.y);
+			addBlueprint(craftItem, clickPosition.x, clickPosition.y);
 		}
 		
 		return true;
@@ -412,7 +414,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	public void unselectAll()
 	{
 		world.unselectAll();
-		stage.hideContextMenu();
+		stage.hideMenus();
 		
 		Iterator<GameCharacter> iter = characters.iterator();
 		while (iter.hasNext())
@@ -423,14 +425,14 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	}
 	
 	
-	private void addBlueprint(float x, float y)
+	private void addBlueprint(Craftable craft, float x, float y)
 	{
 		Tile targetTile = world.getTile((int)Math.floor(x/Tile.TILE_SIZE), (int)Math.floor(y/Tile.TILE_SIZE));
 		
 		if (isBuildingMode)
 		{			
 			//Block b = Block.createBlock(Block.BLOCK_TYPES.BUILDING, targetTile.getX(), targetTile.getY());
-			Block b = Block.createBlock(Block.BLOCK_TYPES.ROCK, targetTile.getX(), targetTile.getY());
+			Block b = Block.createBlock(craft, targetTile.getX(), targetTile.getY());
 			Blueprint bp = new Blueprint(b, targetTile.getX()*Tile.TILE_SIZE, targetTile.getY()*Tile.TILE_SIZE);		
 			Build build = new Build(bp, targetTile.getX(), targetTile.getY());
 			if (targetTile.getBlock() == null && !orders.contains(build))
@@ -517,9 +519,15 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 				currentText = "No action selected!";
 		}
 		
-		stage.hideContextMenu();
+		stage.hideMenus();
 		
 		// 
+	}
+
+	@Override
+	public void buildAction(Craftable craft) {
+		craftItem = craft;
+		isBuildingMode = true;
 	}
 	
 }

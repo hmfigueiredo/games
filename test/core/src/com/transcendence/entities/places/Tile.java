@@ -101,18 +101,27 @@ public class Tile {
 		return block;
 	}
 	
-	public void setBlock(Block b)
+	public void setBlock(Block b, boolean isOrigin)
 	{
 		block = b;
 		
 		// Set the block position for this block the same as the parent tile
-		block.setSpritePosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
+		if (isOrigin)
+		{
+			block.setSpritePosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
+		}
 	}
 	
 	
 	public void render(SpriteBatch batch) {
 		tileSprite.draw(batch);
 		
+		
+			
+	}
+
+	public void renderBlocksAndItems(SpriteBatch batch)
+	{
 		if (block != null)
 		{
 			block.render(batch, false);
@@ -121,9 +130,7 @@ public class Tile {
 		{
 			items.render(batch);
 		}
-			
 	}
-
 
 	public void setSelected(boolean b) {
 		selected = b;	

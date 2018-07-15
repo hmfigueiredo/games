@@ -73,7 +73,7 @@ public class GameWorld implements IndexedGraph<Tile> {
 			if (t.getBlock() == null)
 			{
 				t.setTraversable(false);
-				t.setBlock(Block.createBlock(blockType, t.getX(), t.getY()));
+				t.setBlock(Block.createBlock(blockType, t.getX(), t.getY()), true);
 				System.out.println("Adding obstacle at "+t);
 			}
 		}
@@ -132,9 +132,16 @@ public class GameWorld implements IndexedGraph<Tile> {
 	}
 
 	public void addBlock(Block block, int x, int y) {
-		world[x][y].setTraversable(false);
-		world[x][y].setBlock(block);
 		
+		for (int i=x; i<x+Math.round(block.getRectangle().width / Tile.TILE_SIZE); i++)
+		{
+			for (int j=y; j<y+Math.round(block.getRectangle().height / Tile.TILE_SIZE); j++)
+			{
+				world[i][j].setTraversable(false);
+				world[i][j].setBlock(block, i==x && j==y);
+			}
+		}
+			
 		// TODO: recompute only neighbors of added block
 		recomputeNeighbors();
 		
@@ -177,6 +184,15 @@ public class GameWorld implements IndexedGraph<Tile> {
 					s.setPosition(w*Tile.TILE_SIZE, h*Tile.TILE_SIZE);
 					s.draw(batch);
 				}
+			}
+		}
+		
+		// Render blocks and Items
+		for (int w=0; w<this.getHorizontalSize(); w++)
+		{
+			for (int h=0; h<this.getVerticalSize(); h++)
+			{
+				world[w][h].renderBlocksAndItems(batch);
 			}
 		}
 	}

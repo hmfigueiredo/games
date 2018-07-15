@@ -2,6 +2,7 @@ package com.transcendence.entities.craftables;
 
 import java.util.Iterator;
 
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.transcendence.entities.items.Item;
 import com.transcendence.entities.items.ItemStack;
 import com.transcendence.orders.Scavengeable;
@@ -13,12 +14,16 @@ public class Craftable extends Workable implements Scavengeable {
 	
 	protected Recipe recipe;
 	protected int tilesHorizontal, tilesVertical;
+	protected String name;
+	protected Sprite sprite;
 	
-	public Craftable(int aTilesHor, int aTilesVert)
+	public Craftable(String aname, Sprite asprite, int aTilesHor, int aTilesVert)
 	{
 		recipe = new Recipe();
 		tilesHorizontal = aTilesHor;
 		tilesVertical = aTilesVert;
+		name = aname;
+		sprite = asprite;
 	}
 	
 	public void addItemsToRecipe(Item item, int quantity)
@@ -46,6 +51,13 @@ public class Craftable extends Workable implements Scavengeable {
 		return result;
 	}
 
-	
+	public String getName() {
+		return name;
+	}
+
+	public Sprite getSprite()
+	{
+		return sprite;
+	}
 	
 }
