@@ -86,7 +86,7 @@ public class Recipe {
 		{
 			itemsInRecipe.remove(istack);
 			itemsInRecipe.put(istack, currentQt + items.getItemQt());
-		}
-		
+		}		
 	}
+	
 }

@@ -10,9 +10,6 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.ai.pfa.Connection;
-import com.badlogic.gdx.ai.pfa.DefaultGraphPath;
-import com.badlogic.gdx.ai.pfa.indexed.IndexedAStarPathFinder;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -20,12 +17,9 @@ import com.badlogic.gdx.math.Vector3;
 import com.transcendence.entities.blocks.Block;
 import com.transcendence.entities.characters.GameCharacter;
 import com.transcendence.entities.craftables.Craftable;
-import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.places.Blueprint;
-import com.transcendence.entities.places.ManhattanDistanceHeuristic;
 import com.transcendence.entities.places.Tile;
 import com.transcendence.orders.Build;
-import com.transcendence.orders.Haul;
 import com.transcendence.orders.Order;
 import com.transcendence.orders.Scavenge;
 
@@ -37,10 +31,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	private String currentText;
 	
 	private TranscendenceStage stage;
-	
-	private ManhattanDistanceHeuristic mHeuristic;
-	private IndexedAStarPathFinder<Tile> mPathFinder;
-	
+		
 	private ArrayList<GameCharacter> characters;
 	private ArrayList<Order> orders;
 	
@@ -76,12 +67,10 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		GameCharacter gc = new GameCharacter(TextureManager.createSprite("character", Tile.TILE_SIZE, Tile.TILE_SIZE), world.getHorizontalSize()/2, world.getVerticalSize()/2);
 		characters.add(gc);
 				
-        mHeuristic = new ManhattanDistanceHeuristic();
-		mPathFinder = new IndexedAStarPathFinder<Tile>(world, true);
 		
 		// center the camera on Character 1
-		camera.position.x = characters.get(0).getX();
-		camera.position.y = characters.get(0).getY();
+		camera.position.x = characters.get(0).getAbsoluteX();
+		camera.position.y = characters.get(0).getAbsoluteY();
 		
 		
 		InputMultiplexer multiplexer = new InputMultiplexer();
@@ -132,12 +121,16 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		while (iter.hasNext())
 		{
 			GameCharacter character = iter.next();
+			if (character.isMoving())
+			{
+				character.keepMoving();
+			}
 			character.render(batch);
 			
 			if (character.isSelected())
 			{
 				Sprite circle = TextureManager.createSprite("circle", Tile.TILE_SIZE, Tile.TILE_SIZE);
-				batch.draw(circle, character.getX(), character.getY());
+				batch.draw(circle, character.getAbsoluteX(), character.getAbsoluteY());
 			}
 			if (character.isMoving())
 			{
@@ -252,8 +245,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 
 			if (character.isSelected())
 			{
-				mPathFinder = new IndexedAStarPathFinder<Tile>(world, true);
-				character.followPath(calculatePath((int)Math.floor(character.getX()/Tile.TILE_SIZE), (int)Math.floor(character.getY()/Tile.TILE_SIZE), (int)Math.floor(x/Tile.TILE_SIZE), (int)Math.floor(y/Tile.TILE_SIZE)));
+				character.moveTo(world, (int)Math.floor(x/Tile.TILE_SIZE), (int)Math.floor(y/Tile.TILE_SIZE));
 				charactersSelected = true;
 			}
 		}
@@ -269,43 +261,6 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		}
 	}
 	
-    private DefaultGraphPath<Tile> calculatePath(int fromX, int fromY, int toX, int toY) {
-        Tile startNode = world.getTile(fromX, fromY);
-        Tile endNode = world.getTile(toX, toY); 
-
-        
-        System.out.println("Trying to calculate path from "+startNode+" to "+endNode);
-        
-		DefaultGraphPath<Tile> mPath;
-		mPath = new DefaultGraphPath<Tile>();
-
-        mPath.clear();
-
-        mPathFinder.searchNodePath(startNode, endNode, mHeuristic, mPath);
-
-        if (mPath.nodes.size == 0) {
-        	// if no path is found, try to find a reachable neighbor
-            Iterator<Connection<Tile>> iter = endNode.getConnections().iterator();
-            while (iter.hasNext())
-            {
-              	Tile nextNode = iter.next().getToNode();
-              	System.out.println("Trying to find accessible neighbor at "+nextNode.toString());
-              	mPath.clear();
-            	mPathFinder.searchNodePath(startNode, nextNode, mHeuristic, mPath);
-            	if (mPath.nodes.size !=0)
-            		return mPath;
-            }
-        	System.out.println("No path found");
-        } else {
-            // System.out.println("-----Found path-----");
-        }
-        // Loop throw every node in the solution and select it.
-        for (Tile node : mPath.nodes) {
-            System.out.println(node);
-        }
-        
-        return mPath;
-    }
     
 
 	@Override
@@ -447,97 +402,30 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	
 	private void checkOrders()
 	{
-		Iterator<Order> iter = orders.iterator();
+		// If there are no orders to follow, return
+		if (orders.isEmpty())
+			return;
 		
-		ArrayList<Order> completedOrders = new ArrayList<Order>();
-		
-		while (iter.hasNext())
+		// Let all characters pick up outstanding orders	
+		Iterator<GameCharacter> iterc = characters.iterator();
+		while (iterc.hasNext())
 		{
-			Order order = iter.next();
-			Iterator<GameCharacter> iterc = characters.iterator();
-			
-			// if (order.isBeingAddressed())
-			//	continue;
-			
-			while (iterc.hasNext())
+			GameCharacter gc = iterc.next();
+			gc.checkOrders(orders);
+			gc.followOrders(world);
+		}
+		
+		// If orders were completed, remove them from the list
+		ArrayList<Order> completedOrders = new ArrayList<Order>();
+		Iterator<Order> iterOrder = orders.iterator();
+		while (iterOrder.hasNext())
+		{
+			Order order = iterOrder.next();
+			if (order.isCompleted())
 			{
-				GameCharacter gc = iterc.next();
-				// TODO: update this to any other order
-				
-				// If an available character is not already doing something...
-				// if (gc.getRectangle().overlaps(order.getRectangle()))
-				// TODO: probably will need to check that character is not busy
-				if (gc.isNextTo(order.getX(), order.getY()) && order.canBeCompleted())
-				{
-					if (order instanceof Build)
-					{
-						System.out.println("Building something");
-						Build theOrder = (Build)order;
-						gc.startWorking(theOrder);
-						
-						if (theOrder.isCompleted())
-						{	
-							System.out.println("Something has been built!");
-							Block b = Block.createBlock(theOrder.getCraftable(), order.getX(), order.getY());
-							world.addBlock(b, order.getX(), order.getY());
-							completedOrders.add(theOrder);
-							gc.stopWorking();
-						}
-					}
-					if (order instanceof Scavenge)
-					{
-						Scavenge theOrder = (Scavenge)order;
-						gc.startWorking(theOrder);
-						
-						if (theOrder.isCompleted())
-						{
-							System.out.println("Something has been scavenged");
-							Recipe items = world.getTile(theOrder.getX(), theOrder.getY()).destroyBlock();
-							if (items != null)
-							{
-								world.dumpItems(items, theOrder.getX(), theOrder.getY());
-							}
-								
-							// TODO: only recompute neighbors of this block
-							world.recomputeNeighbors();
-							completedOrders.add(theOrder);
-							gc.stopWorking();
-						}
-					}
-					if (order instanceof Haul)
-					{
-						if (!((Haul)order).isMovingToDestination())
-						{
-							if (world.getTile(order.getX(), order.getY()).getItems() == null)
-							{
-								// Material is no longer there
-								completedOrders.add(order);
-							}
-							else
-							{
-								System.out.println("Found some materials to haul");
-								gc.pickupItems(world.getTile(order.getX(), order.getY()), ((Haul)order).getQuantityToHaul());
-								((Haul) order).setMovingToDestination(true);
-								gc.followPath(calculatePath((int)gc.getNode().x, (int)gc.getNode().y, order.getX(), order.getY()));
-							}
-						}
-						else
-						{
-							System.out.println("Adding items to recipe");
-							gc.addItemsToRecipe(world.getTile(order.getX(), order.getY()).getBuild());
-							completedOrders.add(order);
-							gc.stopWorking();
-						}
-					}
-				}
-				else if (!gc.isBusy() && order.canBeCompleted())
-				{
-					gc.followPath(calculatePath((int)gc.getNode().x, (int)gc.getNode().y, order.getX(), order.getY()));
-				}
-			
+				completedOrders.add(order);
 			}
 		}
-				
 		orders.removeAll(completedOrders);
 	}
 

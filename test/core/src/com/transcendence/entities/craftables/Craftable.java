@@ -68,5 +68,17 @@ public class Craftable extends Workable implements Scavengeable {
 		return sprite;
 	}
 
+	@Override
+	public int getX() {
+		System.out.println("WARNING: Trying to determine Craftable coordinates");
+		return 0;
+	}
+
+	@Override
+	public int getY() {
+		System.out.println("WARNING: Trying to determine Craftable coordinates");
+		return 0;
+	}
+
 	
 }

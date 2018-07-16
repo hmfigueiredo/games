@@ -109,4 +109,16 @@ public class Block extends Workable implements Scavengeable {
 		return new Block(s, craft.getRecipe());
 	}
 
+	@Override
+	public int getX() 
+	{
+		return (int)blockSprite.getX()/Tile.TILE_SIZE;
+	}
+
+	@Override
+	public int getY()
+	{
+		return (int)blockSprite.getY()/Tile.TILE_SIZE;
+	}
+
 }

@@ -23,6 +23,7 @@ public class Tile {
 	protected ItemStack items;
 	protected Sprite tileSprite;
 	private boolean selected;
+	private boolean isBeingHauled;
 	
 	private Build build;
 
@@ -39,6 +40,7 @@ public class Tile {
 		tileSprite.setPosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
 		selected = false;
 		build = null;
+		isBeingHauled = false;
 	}
 	
 	
@@ -104,6 +106,7 @@ public class Tile {
 			items.setItemQt(items.getItemQt()-qt);
 		}
 		
+		this.isBeingHauled = false;
 		return returnStack;
 	}
 	
@@ -192,6 +195,16 @@ public class Tile {
 
 	public Build getBuild() {
 		return build;
+	}
+
+
+	public void setBeingHauled(boolean b) {
+		this.isBeingHauled = true;	
+	}
+	
+	public boolean isBeingHauled()
+	{
+		return isBeingHauled;
 	}
 	
 }

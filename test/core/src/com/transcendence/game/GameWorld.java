@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ai.pfa.Connection;
+import com.badlogic.gdx.ai.pfa.DefaultGraphPath;
+import com.badlogic.gdx.ai.pfa.indexed.IndexedAStarPathFinder;
 import com.badlogic.gdx.ai.pfa.indexed.IndexedGraph;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -12,6 +14,7 @@ import com.badlogic.gdx.utils.Array;
 import com.transcendence.entities.blocks.Block;
 import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.items.ItemStack;
+import com.transcendence.entities.places.ManhattanDistanceHeuristic;
 import com.transcendence.entities.places.Tile;
 import com.transcendence.orders.Build;
 import com.transcendence.orders.Haul;
@@ -31,6 +34,9 @@ public class GameWorld implements IndexedGraph<Tile> {
 	public static int MAX_FIND_RADIUS = 50;
 
 	private Tile[][] world;
+	private ManhattanDistanceHeuristic mHeuristic;
+	private IndexedAStarPathFinder<Tile> mPathFinder;
+
 	
 	// Support for pathfinder
 	private int nodeCount;
@@ -45,6 +51,8 @@ public class GameWorld implements IndexedGraph<Tile> {
 	{
 		// Prepare game world
 		generateWorld(MathUtils.clamp(w, MIN_HORIZONTAL_SIZE, MAX_HORIZONTAL_SIZE), MathUtils.clamp(h, MIN_VERTICAL_SIZE, MAX_VERTICAL_SIZE));
+        mHeuristic = new ManhattanDistanceHeuristic();
+		mPathFinder = new IndexedAStarPathFinder<Tile>(this, true);
 	}
 
 	public int getHorizontalSize()
@@ -316,13 +324,14 @@ public class GameWorld implements IndexedGraph<Tile> {
 							ItemStack istack = istacks.next();
 							if (rec.getHauledQuantity(istack) != istack.getItemQt())
 							{
-								Tile t = findTileWithMaterials(istack);
+								Tile t = findTileWithMaterials(istack, orders);
 								if (t != null)
 								{
 									System.out.println("A blueprint needs "+istack.getItemQt()+" "+istack.getItem().getName());
 									Haul haul = new Haul(new ItemStack(istack), t.getX(), t.getY(), order.getX(), order.getY());
 									ordersToAdd.add(haul);
 									order.setBeingAddressed(true);
+									t.setBeingHauled(true);
 								}
 							}
 						}
@@ -336,13 +345,16 @@ public class GameWorld implements IndexedGraph<Tile> {
 
 	
 	// TODO: change algorithm to find nearest, highest priority item stack
-	private Tile findTileWithMaterials(ItemStack istack) {
+	private Tile findTileWithMaterials(ItemStack istack, ArrayList<Order> orders) {
 		for (int w=0; w<this.getHorizontalSize(); w++)
 		{
 			for (int h=0; h<this.getVerticalSize(); h++)
 			{
 				if (world[w][h] != null && world[w][h].getItems() != null && world[w][h].getItems().getItem().equals(istack.getItem()))
-					return world[w][h];
+				{
+					if (!world[w][h].isBeingHauled())
+						return world[w][h];
+				}
 			}
 		}
 		
@@ -350,5 +362,43 @@ public class GameWorld implements IndexedGraph<Tile> {
 	}
 
 	
+	
+	public DefaultGraphPath<Tile> calculatePath(int fromX, int fromY, int toX, int toY) {
+        Tile startNode = this.getTile(fromX, fromY);
+        Tile endNode = this.getTile(toX, toY); 
+
+        
+        System.out.println("Trying to calculate path from "+startNode+" to "+endNode);
+        
+		DefaultGraphPath<Tile> mPath;
+		mPath = new DefaultGraphPath<Tile>();
+
+        mPath.clear();
+
+        mPathFinder.searchNodePath(startNode, endNode, mHeuristic, mPath);
+
+        if (mPath.nodes.size == 0) {
+        	// if no path is found, try to find a reachable neighbor
+            Iterator<Connection<Tile>> iter = endNode.getConnections().iterator();
+            while (iter.hasNext())
+            {
+              	Tile nextNode = iter.next().getToNode();
+              	System.out.println("Trying to find accessible neighbor at "+nextNode.toString());
+              	mPath.clear();
+            	mPathFinder.searchNodePath(startNode, nextNode, mHeuristic, mPath);
+            	if (mPath.nodes.size !=0)
+            		return mPath;
+            }
+        	System.out.println("No path found");
+        } else {
+            // System.out.println("-----Found path-----");
+        }
+        // Loop throw every node in the solution and select it.
+        for (Tile node : mPath.nodes) {
+            System.out.println(node);
+        }
+        
+        return mPath;
+    }
 	
 }

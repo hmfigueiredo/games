@@ -1,6 +1,8 @@
 package com.transcendence.entities.characters;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Iterator;
 
 import com.badlogic.gdx.ai.pfa.DefaultGraphPath;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -10,7 +12,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.transcendence.entities.items.ItemStack;
 import com.transcendence.entities.places.Tile;
-import com.transcendence.orders.Build;
+import com.transcendence.game.GameWorld;
+import com.transcendence.orders.Order;
 import com.transcendence.orders.Workable;
 
 public class GameCharacter {
@@ -28,8 +31,13 @@ public class GameCharacter {
 	
 	private ItemStack carryingItems;
 	
+	private ArrayList<Order> characterOrders;
+	
 	// Work abilities
 	private int workAbility;
+	
+	// Character unique characteristics
+	private String name;
 	
 		
 	public GameCharacter(Sprite sprite, int posX, int posY)
@@ -50,17 +58,20 @@ public class GameCharacter {
 		workAbility = DEFAULT_WORK_AMOUNT;
 		lastWorkTime = 0;
 		carryingItems = null;
+		
+		characterOrders = new ArrayList<Order>();
+		name = "John Doe";
 	}
 	
 	
 	public int getX()
 	{
-		return (int)character.x;
+		return (int)character.x/Tile.TILE_SIZE;
 	}
 	
 	public int getY()
 	{
-		return (int)character.y;
+		return (int)character.y/Tile.TILE_SIZE;
 	}
 	
 	public boolean isSelected()
@@ -103,7 +114,7 @@ public class GameCharacter {
 
 	public void keepMoving()
 	{
-		this.followPath(this.currentPath);
+		this.followCurrentPath();
 	}
 
 	public void stopMoving() {
@@ -112,13 +123,20 @@ public class GameCharacter {
 		character.x = Tile.TILE_SIZE*(Math.round(character.x/Tile.TILE_SIZE));
 		character.y = Tile.TILE_SIZE*(Math.round(character.y/Tile.TILE_SIZE));
 	}
-	
-	public void followPath(DefaultGraphPath<Tile> path) 
+
+	public void moveTo(GameWorld world, int x, int y) 
 	{
-		if (path != null && path.getCount() > 1)
+		this.currentPath = world.calculatePath(this.getX(), this.getY(), x, y);
+		this.followCurrentPath();
+	}
+
+	
+	private void followCurrentPath()
+	{	
+		if (currentPath != null && currentPath.getCount() > 1)
 		{
 			// The next tile is the second in the graph - first is the origin
-			Tile nextTile = path.nodes.get(1);
+			Tile nextTile = currentPath.nodes.get(1);
 			
 			
 			// Move at MOVE_RATE closer to next tile in path
@@ -143,16 +161,14 @@ public class GameCharacter {
 			// If character has reached next tile, pop it from the graph
 			if (currentNode.epsilonEquals(new Vector2(nextTile.getX(), nextTile.getY())))
 			{
-				path.nodes.removeIndex(1);
+				currentPath.nodes.removeIndex(1);
 			}
 					
 			
 			isMoving = true;
-			currentPath = path;
 		}
 		else
 		{
-			// TODO: isMoving to keep moving on the update cycle
 			isMoving = false;
 		}
 	}
@@ -176,19 +192,27 @@ public class GameCharacter {
 	}
 
 
-	public void startWorking(Workable work) {
-		long t = Calendar.getInstance().getTimeInMillis();
-		
-		// Only continue working if cooldown period is over
-		if ((t-lastWorkTime) > DEFAULT_WORK_COOLDOWN)
-		{
+	public void doWork(Workable work, GameWorld world) {
+		if (this.isNextTo(work.getX(), work.getY()))
+		{			
+			long t = Calendar.getInstance().getTimeInMillis();
 			isWorking = true;
 			isMoving = false;
-			work.doWork(workAbility);
-			lastWorkTime = t;
-		}	
+			
+			// Only continue working if cooldown period is over
+			if ((t-lastWorkTime) > DEFAULT_WORK_COOLDOWN)
+			{
+				work.doWork(workAbility, world, this);
+				lastWorkTime = t;
+			}
+		}
+		else if (!this.isMoving)
+		{
+			this.moveTo(world, work.getX(), work.getY());
+		}
 	}
 	
+
 	public void stopWorking() {
 		isWorking = false;
 		this.stopMoving();
@@ -219,15 +243,96 @@ public class GameCharacter {
 		if (this.isNextTo(tile.getX(), tile.getY()))
 		{
 			carryingItems = tile.pickUpItems(qt);
-			System.out.println("Someone just picked up "+carryingItems.getItemQt()+" "+carryingItems.getItem().getName());
+			System.out.println(this.name+" just picked up "+carryingItems.getItemQt()+" "+carryingItems.getItem().getName());
 		}
+		else
+		{
+			System.out.println(this.name+" could not pick up items due to being too far away!");
+		}
+	}
+	
+	
+	/**
+	 * If character is not working, selects next available order
+	 * @param orders
+	 */
+	public void checkOrders(ArrayList<Order> orders)
+	{
+		if (this.isBusy())
+			return;
 		
+		// TODO: Follow priorities defined for the character
+		Iterator<Order> iter = orders.iterator();
+		while (iter.hasNext())
+		{
+			Order order = iter.next();
+			if (!order.isBeingAddressed() && order.canBeCompleted())
+			{
+				this.characterOrders.add(order);
+				order.setBeingAddressed(true);
+			}
+		}
+	}
+	
+	
+	/**
+	 * Forces a character to work on a specific order (e.g. prioritized work)
+	 * @param order
+	 */
+	public void forceOrder(Order order)
+	{
+		// Stop everything character is doing...
+		this.stopWorking();
+		this.stopMoving();
+		this.characterOrders.clear();
+		
+		// ... and add the new order
+		this.characterOrders.add(order);
+	}
+	
+	
+	/**
+	 * Follows the next order in the list
+	 */
+	public void followOrders(GameWorld world)
+	{
+		if (!characterOrders.isEmpty())
+		{
+			Order nextOrder = characterOrders.get(0);
+			nextOrder.setBeingAddressed(true);
+			this.doWork(nextOrder, world);
+			
+			if (nextOrder.isCompleted())
+			{
+				characterOrders.remove(0);
+			}
+		}
 	}
 
 
-	public void addItemsToRecipe(Build build) {
-		System.out.println("Someone is adding "+carryingItems.getItemQt()+" "+carryingItems.getItem().getName()+" to a recipe");
-		build.getCraftable().getRecipe().haulItems(carryingItems);;
+	public String getName() {
+		return name;
+	}
+
+
+	public ItemStack getCarryingItems() {
+		return carryingItems;
+	}
+
+
+	public ItemStack dropCarryingItems() {
+		ItemStack returnStack = carryingItems;
+		carryingItems = null;
 		
+		return returnStack;
+	}
+
+
+	public float getAbsoluteX() {
+		return character.x;
+	}
+	
+	public float getAbsoluteY() {
+		return character.y;
 	}
 }

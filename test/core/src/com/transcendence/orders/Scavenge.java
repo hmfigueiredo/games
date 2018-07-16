@@ -3,7 +3,10 @@ package com.transcendence.orders;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.transcendence.entities.characters.GameCharacter;
+import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.places.Tile;
+import com.transcendence.game.GameWorld;
 import com.transcendence.game.TextureManager;
 
 public class Scavenge extends Order {
@@ -61,5 +64,24 @@ public class Scavenge extends Order {
 		return true;
 	}
 
-
+	@Override
+	public boolean doWork(int workAmount, GameWorld world, GameCharacter gc)
+	{
+		super.doWork(workAmount, world, gc);
+		
+		if (this.isCompleted())
+		{
+			Recipe items = world.getTile(this.getX(), this.getY()).destroyBlock();
+			if (items != null)
+			{
+				world.dumpItems(items, getX(), getY());
+				gc.stopWorking();
+			}
+				
+			// TODO: only recompute neighbors of this block
+			world.recomputeNeighbors();
+		}
+		
+		return false;
+	}
 }
