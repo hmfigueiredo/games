@@ -8,7 +8,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.transcendence.entities.items.ItemStack;
 import com.transcendence.entities.places.Tile;
+import com.transcendence.orders.Build;
 import com.transcendence.orders.Workable;
 
 public class GameCharacter {
@@ -24,9 +26,10 @@ public class GameCharacter {
 	private Sprite characterSprite;
 	private long lastWorkTime;
 	
+	private ItemStack carryingItems;
 	
 	// Work abilities
-	int workAbility;
+	private int workAbility;
 	
 		
 	public GameCharacter(Sprite sprite, int posX, int posY)
@@ -46,6 +49,7 @@ public class GameCharacter {
 		
 		workAbility = DEFAULT_WORK_AMOUNT;
 		lastWorkTime = 0;
+		carryingItems = null;
 	}
 	
 	
@@ -193,6 +197,11 @@ public class GameCharacter {
 
 
 	public boolean isNextTo(int x, int y) {
+		// If it's already overlapping...
+		Rectangle rect = new Rectangle(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE, Tile.TILE_SIZE, Tile.TILE_SIZE);
+		if (this.getRectangle().overlaps(rect))
+			return true;
+		
 		// Only consider next to if character is fully contained in a tile
 		if (character.x%Tile.TILE_SIZE != 0 || character.y%Tile.TILE_SIZE != 0)
 			return false;
@@ -203,5 +212,22 @@ public class GameCharacter {
 			return true;
 		
 		return false;
+	}
+
+
+	public void pickupItems(Tile tile, int qt) {
+		if (this.isNextTo(tile.getX(), tile.getY()))
+		{
+			carryingItems = tile.pickUpItems(qt);
+			System.out.println("Someone just picked up "+carryingItems.getItemQt()+" "+carryingItems.getItem().getName());
+		}
+		
+	}
+
+
+	public void addItemsToRecipe(Build build) {
+		System.out.println("Someone is adding "+carryingItems.getItemQt()+" "+carryingItems.getItem().getName()+" to a recipe");
+		build.getCraftable().getRecipe().haulItems(carryingItems);;
+		
 	}
 }

@@ -1,5 +1,6 @@
 package com.transcendence.entities.blocks;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
@@ -102,6 +103,8 @@ public class Block extends Workable implements Scavengeable {
 	{
 		Sprite s = new Sprite(craft.getSprite());
 		s.setPosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
+		s.setAlpha(1.0f);
+		s.setColor(Color.WHITE);
 
 		return new Block(s, craft.getRecipe());
 	}

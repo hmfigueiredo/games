@@ -3,7 +3,6 @@ package com.transcendence.game;
 import java.util.Iterator;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -21,8 +20,6 @@ public class TranscendenceStage extends Stage {
 
 	public static float BUTTON_WIDTH = 100.0f;
 	private Label currentText, currentFps;;
-	private static Color defaultColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-	private static Color checkedColor = new Color(0f, 0f, 1.0f, 1.0f);
 	private TextButton buildButton;
 	private Skin skin;
 	
@@ -73,6 +70,7 @@ public class TranscendenceStage extends Stage {
  		craftablesMenu = new GameMenu("Build", skin);
  		craftablesMenu.setVisible(false);
  		this.addActor(craftablesMenu);
+ 		craftablesMenu.setPosition(buildButton.getX()+buildButton.getWidth(), buildButton.getY()+buildButton.getHeight());
  		
  		Iterator<Craftable> iter = CraftableLoader.getCraftables().iterator();
  		while (iter.hasNext())
@@ -89,15 +87,12 @@ public class TranscendenceStage extends Stage {
 			public void changed (ChangeEvent event, Actor actor) {
 				if (buildButton.isChecked())
 				{
-					buildButton.setColor(checkedColor);
-					// tgame.setBuildingMode(true);
 					craftablesMenu.setVisible(true);
 				}
-				else
-				{
-					buildButton.setColor(defaultColor);
-					game.setBuildingMode(false);
-				}
+				//else
+				//{
+				//	game.setBuildingMode(false);
+				//}
 			}
 		});
 		
@@ -113,12 +108,6 @@ public class TranscendenceStage extends Stage {
 		currentFps.setText("FPS: "+fps);
 	}
 	
-	public void disableBuildingMode()
-	{
-		buildButton.setColor(defaultColor);
-		buildButton.setText("Build");
-		buildButton.setChecked(false);
-	}
 
 	public ContextMenu getContextMenu()
 	{
@@ -137,5 +126,6 @@ public class TranscendenceStage extends Stage {
 		contextMenu = null;
 		
 		craftablesMenu.setVisible(false);
+		buildButton.setChecked(false);
 	}
 }

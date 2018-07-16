@@ -16,6 +16,12 @@ public class ItemStack {
 		itemQt = qt;
 	}
 
+	public ItemStack(ItemStack istack) {
+		// TODO: will probably need to clone this item to support properties
+		item = istack.item;
+		itemQt = istack.getItemQt();
+	}
+
 	public void render(SpriteBatch batch) {
 		if (item != null && item.getItemSprite() != null)
 		{
@@ -38,5 +44,10 @@ public class ItemStack {
 	public Item getItem()
 	{
 		return item;
+	}
+
+	public void setItemQt(int qt) 
+	{
+		this.itemQt = qt;
 	}
 }

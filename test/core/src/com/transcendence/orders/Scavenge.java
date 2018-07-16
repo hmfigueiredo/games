@@ -56,5 +56,10 @@ public class Scavenge extends Order {
 		return scavengeSprite.getBoundingRectangle();
 	}
 
+	@Override
+	public boolean canBeCompleted() {
+		return true;
+	}
+
 
 }

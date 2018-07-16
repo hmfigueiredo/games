@@ -26,6 +26,14 @@ public class Craftable extends Workable implements Scavengeable {
 		sprite = asprite;
 	}
 	
+	public Craftable(Craftable craft) {
+		recipe = new Recipe(craft.recipe);
+		tilesHorizontal = craft.tilesHorizontal;
+		tilesVertical = craft.tilesVertical;
+		name = new String(craft.getName());
+		sprite = new Sprite(craft.sprite);
+	}
+
 	public void addItemsToRecipe(Item item, int quantity)
 	{
 		recipe.addItem(item, quantity);
@@ -59,5 +67,6 @@ public class Craftable extends Workable implements Scavengeable {
 	{
 		return sprite;
 	}
+
 	
 }

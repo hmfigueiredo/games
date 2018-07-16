@@ -15,16 +15,18 @@ public class Item {
 	private static final int ITEM_SIZE = 32;
 	private HashMap<String, String> properties;
 	private Sprite itemSprite;
+	private int itemTypeId;
 	
 	
-	private Item(Sprite sprite)
+	private Item(int itemTypeId, Sprite sprite)
 	{
 		properties = new HashMap<String,String>();
 		itemSprite = sprite;
+		this.itemTypeId = itemTypeId;
 	}
 
 	private Item(Item providedItem) {
-		this(new Sprite(providedItem.itemSprite));
+		this(providedItem.itemTypeId, new Sprite(providedItem.itemSprite));
 		
 		properties = new HashMap<String, String>();
 		Iterator<String> keys = providedItem.properties.keySet().iterator();
@@ -48,13 +50,40 @@ public class Item {
 		switch (itemId)
 		{
 		case STONE:
-			newItem = new Item(TextureManager.createSprite("stone_stack", Item.ITEM_SIZE, Item.ITEM_SIZE));
+			newItem = new Item(STONE, TextureManager.createSprite("stone_stack", Item.ITEM_SIZE, Item.ITEM_SIZE));
 			break;
 		case WOOD:
-			newItem = new Item(TextureManager.createSprite("wood_stack", Item.ITEM_SIZE, Item.ITEM_SIZE));
+			newItem = new Item(WOOD, TextureManager.createSprite("wood_stack", Item.ITEM_SIZE, Item.ITEM_SIZE));
 			break;
 		}
 		return newItem;
+	}
+	
+	public int getItemTypeId()
+	{
+		return itemTypeId;
+	}
+	
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (obj instanceof Item)
+		{
+			if (obj != null && ((Item)obj).itemTypeId == itemTypeId)
+				return true;
+		}
+		
+		return false;
+	}
+
+	public String getName() {
+		switch (itemTypeId)
+		{
+		case WOOD: return "wood stack";
+		case STONE: return "stone stack";
+		default: return "unknown";
+		}
 	}
 	
 	// TODO: Add item properties (like hit points for decay, etc)

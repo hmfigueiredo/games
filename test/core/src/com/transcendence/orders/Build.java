@@ -1,15 +1,18 @@
 package com.transcendence.orders;
 
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.transcendence.entities.craftables.Craftable;
 import com.transcendence.entities.places.Blueprint;
+import com.transcendence.entities.places.Tile;
 
 public class Build extends Order {
 	
-	protected Blueprint blueprint;
+	protected Craftable craft;
 
-	public Build(Blueprint bp, int ax, int ay) {
-		blueprint = bp;
+	public Build(Craftable aCraft, int ax, int ay) {
+		craft = aCraft;
 		x = ax;
 		y = ay;
 	}
@@ -17,42 +20,35 @@ public class Build extends Order {
 	@Override
 	public void render(SpriteBatch batch) 
 	{
-		if (blueprint != null)
+		if (craft != null)
 		{
-			blueprint.render(batch);
-	
+			Sprite s = craft.getSprite();
+			Blueprint.turnToBlueprint(s);
+			s.setPosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
+			s.draw(batch);	
 		}
 	}
 	
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (obj instanceof Build && !(blueprint == null))
-		{
-			if (!(((Build)obj).blueprint == null))
-			{
-				if (((Build)obj).blueprint.equals(this.blueprint))
-					return true;
-			}
-		}
-		
-		return false;
-	}
 
 
 	@Override
 	public Rectangle getRectangle() {
-		if (blueprint != null)
+		if (craft != null && craft.getSprite() != null)
 		{
-			return blueprint.getRectangle();
+			return craft.getSprite().getBoundingRectangle();
 		}
 		return null;
 	}
 
 
-	public Blueprint getBlueprint()
+	public Craftable getCraftable()
 	{
-		return blueprint;
+		return craft;
+	}
+
+	@Override
+	public boolean canBeCompleted() {
+		return craft.getRecipe().isComplete();
 	}
 
 

@@ -25,6 +25,7 @@ import com.transcendence.entities.places.Blueprint;
 import com.transcendence.entities.places.ManhattanDistanceHeuristic;
 import com.transcendence.entities.places.Tile;
 import com.transcendence.orders.Build;
+import com.transcendence.orders.Haul;
 import com.transcendence.orders.Order;
 import com.transcendence.orders.Scavenge;
 
@@ -123,6 +124,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		
 		
 		// Render characters
+		world.findMaterialsToHaul(orders);
 		checkOrders();
 		Iterator<GameCharacter> iter = characters.iterator();
 		iter = characters.iterator();
@@ -272,8 +274,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
         Tile endNode = world.getTile(toX, toY); 
 
         
-        System.out.println("Trying to calculate path from node ("+fromX+","+fromY+") to ("+toX+","+toY+")");
-        System.out.println("NODES: Trying to calculate path from "+startNode+" to "+endNode);
+        System.out.println("Trying to calculate path from "+startNode+" to "+endNode);
         
 		DefaultGraphPath<Tile> mPath;
 		mPath = new DefaultGraphPath<Tile>();
@@ -294,9 +295,9 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
             	if (mPath.nodes.size !=0)
             		return mPath;
             }
-        	System.out.println("-----No path found-----");
+        	System.out.println("No path found");
         } else {
-            System.out.println("-----Found path-----");
+            // System.out.println("-----Found path-----");
         }
         // Loop throw every node in the solution and select it.
         for (Tile node : mPath.nodes) {
@@ -328,7 +329,6 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		{
 			setBuildingMode(false);
 			unselectAll();
-			stage.disableBuildingMode();
 			return true;
 		}
 		return false;
@@ -431,13 +431,15 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 		
 		if (isBuildingMode)
 		{			
-			//Block b = Block.createBlock(Block.BLOCK_TYPES.BUILDING, targetTile.getX(), targetTile.getY());
-			Block b = Block.createBlock(craft, targetTile.getX(), targetTile.getY());
-			Blueprint bp = new Blueprint(b, targetTile.getX()*Tile.TILE_SIZE, targetTile.getY()*Tile.TILE_SIZE);		
-			Build build = new Build(bp, targetTile.getX(), targetTile.getY());
-			if (targetTile.getBlock() == null && !orders.contains(build))
+//			Block b = Block.createBlock(craft, targetTile.getX(), targetTile.getY());
+//			Blueprint bp = new Blueprint(b, targetTile.getX()*Tile.TILE_SIZE, targetTile.getY()*Tile.TILE_SIZE);		
+//			Build build = new Build(bp, targetTile.getX(), targetTile.getY());
+
+			Build build = new Build(new Craftable(craft), targetTile.getX(), targetTile.getY());
+			if (world.canGetBlueprint(build))
 			{
-				orders.add(build);				
+				orders.add(build);
+				world.addBlueprint(build);
 			}
 		}
 	}
@@ -454,6 +456,9 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 			Order order = iter.next();
 			Iterator<GameCharacter> iterc = characters.iterator();
 			
+			// if (order.isBeingAddressed())
+			//	continue;
+			
 			while (iterc.hasNext())
 			{
 				GameCharacter gc = iterc.next();
@@ -461,16 +466,20 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 				
 				// If an available character is not already doing something...
 				// if (gc.getRectangle().overlaps(order.getRectangle()))
-				if (gc.isNextTo(order.getX(), order.getY()))
+				// TODO: probably will need to check that character is not busy
+				if (gc.isNextTo(order.getX(), order.getY()) && order.canBeCompleted())
 				{
 					if (order instanceof Build)
 					{
+						System.out.println("Building something");
 						Build theOrder = (Build)order;
 						gc.startWorking(theOrder);
 						
 						if (theOrder.isCompleted())
 						{	
-							world.addBlock(theOrder.getBlueprint().getBlock(), order.getX(), order.getY());
+							System.out.println("Something has been built!");
+							Block b = Block.createBlock(theOrder.getCraftable(), order.getX(), order.getY());
+							world.addBlock(b, order.getX(), order.getY());
 							completedOrders.add(theOrder);
 							gc.stopWorking();
 						}
@@ -481,7 +490,8 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 						gc.startWorking(theOrder);
 						
 						if (theOrder.isCompleted())
-						{	
+						{
+							System.out.println("Something has been scavenged");
 							Recipe items = world.getTile(theOrder.getX(), theOrder.getY()).destroyBlock();
 							if (items != null)
 							{
@@ -494,8 +504,33 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 							gc.stopWorking();
 						}
 					}
+					if (order instanceof Haul)
+					{
+						if (!((Haul)order).isMovingToDestination())
+						{
+							if (world.getTile(order.getX(), order.getY()).getItems() == null)
+							{
+								// Material is no longer there
+								completedOrders.add(order);
+							}
+							else
+							{
+								System.out.println("Found some materials to haul");
+								gc.pickupItems(world.getTile(order.getX(), order.getY()), ((Haul)order).getQuantityToHaul());
+								((Haul) order).setMovingToDestination(true);
+								gc.followPath(calculatePath((int)gc.getNode().x, (int)gc.getNode().y, order.getX(), order.getY()));
+							}
+						}
+						else
+						{
+							System.out.println("Adding items to recipe");
+							gc.addItemsToRecipe(world.getTile(order.getX(), order.getY()).getBuild());
+							completedOrders.add(order);
+							gc.stopWorking();
+						}
+					}
 				}
-				else if (!gc.isBusy())
+				else if (!gc.isBusy() && order.canBeCompleted())
 				{
 					gc.followPath(calculatePath((int)gc.getNode().x, (int)gc.getNode().y, order.getX(), order.getY()));
 				}
@@ -528,6 +563,7 @@ public class TranscendenceGame extends ApplicationAdapter implements InputProces
 	public void buildAction(Craftable craft) {
 		craftItem = craft;
 		isBuildingMode = true;
+		stage.hideMenus();
 	}
 	
 }

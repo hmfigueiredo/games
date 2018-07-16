@@ -8,6 +8,7 @@ import com.badlogic.gdx.utils.Array;
 import com.transcendence.entities.blocks.Block;
 import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.items.ItemStack;
+import com.transcendence.orders.Build;
 
 public class Tile {
 
@@ -23,6 +24,7 @@ public class Tile {
 	protected Sprite tileSprite;
 	private boolean selected;
 	
+	private Build build;
 
 	public Tile(Sprite sprite, int aX, int aY, int aIndex)
 	{
@@ -36,6 +38,7 @@ public class Tile {
 		tileSprite = sprite;
 		tileSprite.setPosition(x*Tile.TILE_SIZE, y*Tile.TILE_SIZE);
 		selected = false;
+		build = null;
 	}
 	
 	
@@ -88,6 +91,22 @@ public class Tile {
 		return items;
 	}
 	
+	public ItemStack pickUpItems(int qt) {
+		ItemStack returnStack = null;
+		if (items.getItemQt() <= qt)
+		{
+			returnStack = items;
+			items = null;
+		}
+		else
+		{
+			returnStack = new ItemStack(items.getItem(), qt);
+			items.setItemQt(items.getItemQt()-qt);
+		}
+		
+		return returnStack;
+	}
+	
 	public void addItems(ItemStack itemsToAdd)
 	{
 		if (items == null)
@@ -113,11 +132,9 @@ public class Tile {
 	}
 	
 	
-	public void render(SpriteBatch batch) {
+	public void render(SpriteBatch batch) 
+	{
 		tileSprite.draw(batch);
-		
-		
-			
 	}
 
 	public void renderBlocksAndItems(SpriteBatch batch)
@@ -154,4 +171,27 @@ public class Tile {
 		
 		return resultingItems;
 	}
+
+
+	public boolean isEmpty() 
+	{
+		return (block == null && build == null);
+	}
+	
+	
+	public void setBlueprint(Build b)
+	{
+		build = b;
+	}
+
+
+	public void setItems(ItemStack items) {
+		this.items = items;
+	}
+
+
+	public Build getBuild() {
+		return build;
+	}
+	
 }

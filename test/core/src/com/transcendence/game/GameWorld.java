@@ -1,5 +1,6 @@
 package com.transcendence.game;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.badlogic.gdx.ai.pfa.Connection;
@@ -12,6 +13,9 @@ import com.transcendence.entities.blocks.Block;
 import com.transcendence.entities.craftables.Recipe;
 import com.transcendence.entities.items.ItemStack;
 import com.transcendence.entities.places.Tile;
+import com.transcendence.orders.Build;
+import com.transcendence.orders.Haul;
+import com.transcendence.orders.Order;
 
 public class GameWorld implements IndexedGraph<Tile> {
 
@@ -139,6 +143,7 @@ public class GameWorld implements IndexedGraph<Tile> {
 			{
 				world[i][j].setTraversable(false);
 				world[i][j].setBlock(block, i==x && j==y);
+				world[i][j].setBlueprint(null);
 			}
 		}
 			
@@ -261,4 +266,89 @@ public class GameWorld implements IndexedGraph<Tile> {
 		return null;
 	}
 
+	public void addBlueprint(Build build) 
+	{
+		for (int i=build.getX(); i<build.getX()+Math.round(build.getRectangle().width / Tile.TILE_SIZE); i++)
+		{
+			for (int j=build.getY(); j<build.getY()+Math.round(build.getRectangle().height / Tile.TILE_SIZE); j++)
+			{
+				world[i][j].setBlueprint(build);
+			}
+		}
+		
+	}
+	
+	public boolean canGetBlueprint(Build build)
+	{
+		for (int i=build.getX(); i<build.getX()+Math.round(build.getRectangle().width / Tile.TILE_SIZE); i++)
+		{
+			for (int j=build.getY(); j<build.getY()+Math.round(build.getRectangle().height / Tile.TILE_SIZE); j++)
+			{
+				if (!world[i][j].isEmpty())
+					return false;
+			}
+		}
+		
+		return true;
+	}
+
+	public void findMaterialsToHaul(ArrayList<Order> orders) 
+	{
+		Iterator<Order> iter = orders.iterator();
+		ArrayList<Order> ordersToAdd = new ArrayList<Order>();
+		
+		while (iter.hasNext())
+		{
+			Order order = iter.next();
+			
+			if (order instanceof Build)
+			{
+				if (!((Build)order).canBeCompleted() && !order.isBeingAddressed())
+				{
+					Recipe rec = ((Build)order).getCraftable().getRecipe();
+					
+					if (!rec.isComplete())
+					{
+						Iterator<ItemStack> istacks = rec.getItems().iterator();
+						
+						while (istacks.hasNext())
+						{
+							ItemStack istack = istacks.next();
+							if (rec.getHauledQuantity(istack) != istack.getItemQt())
+							{
+								Tile t = findTileWithMaterials(istack);
+								if (t != null)
+								{
+									System.out.println("A blueprint needs "+istack.getItemQt()+" "+istack.getItem().getName());
+									Haul haul = new Haul(new ItemStack(istack), t.getX(), t.getY(), order.getX(), order.getY());
+									ordersToAdd.add(haul);
+									order.setBeingAddressed(true);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		orders.addAll(ordersToAdd);
+	}
+
+	
+	// TODO: change algorithm to find nearest, highest priority item stack
+	private Tile findTileWithMaterials(ItemStack istack) {
+		for (int w=0; w<this.getHorizontalSize(); w++)
+		{
+			for (int h=0; h<this.getVerticalSize(); h++)
+			{
+				if (world[w][h] != null && world[w][h].getItems() != null && world[w][h].getItems().getItem().equals(istack.getItem()))
+					return world[w][h];
+			}
+		}
+		
+		return null;
+	}
+
+	
+	
 }
